@@ -16,8 +16,6 @@
 #include <parse.h>
 #include <toplev.h>
 
-#include <str-vec.h>
-
 #include <sstream>
 #include <QTextStream>
 
@@ -28,13 +26,13 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     initializeGraph();
 
-    ui->imageLabel->setBackgroundRole(QPalette::Base);
-    ui->imageLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
-    ui->imageLabel->setScaledContents(true);
+//    ui->imageLabel->setBackgroundRole(QPalette::Base);
+//    ui->imageLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+//    ui->imageLabel->setScaledContents(true);
 
-    ui->scrollArea->setBackgroundRole(QPalette::Dark);
-    ui->scrollArea->setWidgetResizable(true);
-    ui->scrollArea->setVisible(false);
+//    ui->scrollArea->setBackgroundRole(QPalette::Dark);
+//    ui->scrollArea->setWidgetResizable(true);
+//    ui->scrollArea->setVisible(false);
 
 
     // Initialize octave
@@ -42,12 +40,40 @@ MainWindow::MainWindow(QWidget *parent) :
     argv(0) = "embedded";
     argv(1) = "-q";
 
-    //octave_main(2, argv.c_str_vec(), 1);
+    octave_main(2, argv.c_str_vec(), 1);
+    qDebug() << "octave_main complete";
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::runOctaveScript(QString &fileName)
+{
+    // Octave function to read hyperspectral:
+    // function [x] = ReadFile(fileName, scale)
+
+    // ReadFile loads a hyperspectral cube produced by Spectronon Pro software
+    // and saves it in x. The function reads up to 40 bands at a time due to a
+    // memory overflow crash. It outputs the time required to read each time it
+    // gets 40 more bands.
+    //
+    // Arguments:
+    //    fileName: A string containing the name of the file without extensions.
+    //    scale:  A boolean value, where 1 indicates that the data should be
+    //            converted to floating point values and scaled to 1 by dividing
+    //            by the value indicated in the header file.
+    // --------------------------------------------------------------------------
+
+    octave_value_list input;
+
+    QByteArray ba = fileName.toLatin1();
+    const char *fileNameChar = ba.data();
+    input(0) = octave_value(fileNameChar);
+    input(1) = octave_value(0); //boolean
+
+    octave_value_list output = feval("ReadFile", input, 2);
 }
 
 bool MainWindow::loadFile(const QString &fileName)
@@ -325,9 +351,11 @@ void MainWindow::addPoint(QVector<double> pointVector)
 
 void MainWindow::on_loadButton_released()
 {
-    /*QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), QString());
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), QString());
 
-    QImageReader reader(fileName);
+    runOctaveScript(fileName);
+
+    /*QImageReader reader(fileName);
     reader.setAutoTransform(true);
     const QImage newImage = reader.read();
 

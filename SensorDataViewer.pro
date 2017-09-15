@@ -26,11 +26,11 @@ FORMS += \
 
 #LIBS += -LC:/Octave/Octave-4.0.2/lib/octave/4.0.2/ -lliboctinterp.dll -lliboctave.dll
 
-INCLUDEPATH += C:/Octave/Octave-4.0.2/include/octave-4.0.2/octave
-DEPENDPATH += C:/Octave/Octave-4.0.2/include/octave-4.0.2/octave
+INCLUDEPATH += $$PWD/Octave/octave-4.0.3/include/octave-4.0.3/octave
+DEPENDPATH += $$PWD/Octave/octave-4.0.3/include/octave-4.0.3/octave
 
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/Octave/Octave-4.0.2/lib/octave/4.0.2/ -lliboctave.dll -lliboctinterp.dll
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/Octave/Octave-4.0.2/lib/octave/4.0.2/ -lliboctave.dll -lliboctinterp.dll
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/Octave/octave-4.0.3/lib/octave/4.0.3/ -lliboctave.dll -lliboctinterp.dll
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/Octave/octave-4.0.3/lib/octave/4.0.3/ -lliboctave.dll -lliboctinterp.dll
 
-INCLUDEPATH += $$PWD/Octave/Octave-4.0.2/lib/octave/4.0.2
-DEPENDPATH += $$PWD/Octave/Octave-4.0.2/lib/octave/4.0.2
+INCLUDEPATH += $$PWD/Octave/octave-4.0.3/lib/octave/4.0.3
+DEPENDPATH += $$PWD/Octave/octave-4.0.3/lib/octave/4.0.3

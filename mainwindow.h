@@ -60,6 +60,8 @@ private:
     void setImage(const QImage &newImage);
     //void scaleImage(double factor);
 
+    void runOctaveScript(QString &fileName);
+
     // Private members for QCustomPlot
     void initializeGraph();
     int xMin, xMax, yMin, yMax;

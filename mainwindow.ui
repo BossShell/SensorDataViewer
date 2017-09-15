@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1242</width>
+    <width>556</width>
     <height>685</height>
    </rect>
   </property>
@@ -26,52 +26,6 @@
     <property name="text">
      <string>Zoom In</string>
     </property>
-   </widget>
-   <widget class="QScrollArea" name="scrollArea">
-    <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>10</y>
-      <width>500</width>
-      <height>400</height>
-     </rect>
-    </property>
-    <property name="widgetResizable">
-     <bool>true</bool>
-    </property>
-    <widget class="QWidget" name="scrollAreaWidgetContents">
-     <property name="geometry">
-      <rect>
-       <x>0</x>
-       <y>0</y>
-       <width>498</width>
-       <height>398</height>
-      </rect>
-     </property>
-     <widget class="QWidget" name="widget" native="true">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>0</y>
-        <width>500</width>
-        <height>400</height>
-       </rect>
-      </property>
-      <widget class="QLabel" name="imageLabel">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>0</y>
-         <width>500</width>
-         <height>400</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>ImageLabel</string>
-       </property>
-      </widget>
-     </widget>
-    </widget>
    </widget>
    <widget class="QPushButton" name="loadButton">
     <property name="geometry">
@@ -168,7 +122,7 @@
      </rect>
     </property>
     <property name="title">
-     <string>GraphBox</string>
+     <string/>
     </property>
     <widget class="QCustomPlot" name="customPlot" native="true">
      <property name="geometry">
@@ -249,14 +203,24 @@
      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
     </property>
    </widget>
+   <widget class="QGraphicsView" name="graphicsView">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>10</y>
+      <width>500</width>
+      <height>400</height>
+     </rect>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1242</width>
-     <height>21</height>
+     <width>556</width>
+     <height>26</height>
     </rect>
    </property>
   </widget>
