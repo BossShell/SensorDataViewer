@@ -11,13 +11,12 @@
 #include <QMessageBox>
 #include <QTextStream>
 
-#include <iostream>
 #include <oct.h>
 #include <octave.h>
 #include <parse.h>
-#include <interpreter.h>
+#include <toplev.h>
+
 #include <str-vec.h>
-class string_vector;
 
 #include <sstream>
 #include <QTextStream>

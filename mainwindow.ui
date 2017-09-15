@@ -202,6 +202,9 @@
        <height>33</height>
       </rect>
      </property>
+     <property name="styleSheet">
+      <string notr="true"/>
+     </property>
      <property name="text">
       <string>Add</string>
      </property>
@@ -236,8 +239,8 @@
    <widget class="QDialogButtonBox" name="buttonBox">
     <property name="geometry">
      <rect>
-      <x>820</x>
-      <y>270</y>
+      <x>570</x>
+      <y>210</y>
       <width>156</width>
       <height>23</height>
      </rect>

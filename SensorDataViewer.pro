@@ -24,10 +24,13 @@ HEADERS += \
 FORMS += \
         mainwindow.ui
 
-INCLUDEPATH += C:\Octave\Octave-4.2.1\include\octave-4.2.1\octave
-DEPENDPATH += C:\Octave\Octave-4.2.1\include\octave-4.2.1\octave
+#LIBS += -LC:/Octave/Octave-4.0.2/lib/octave/4.0.2/ -lliboctinterp.dll -lliboctave.dll
 
-INCLUDEPATH += C:\Octave\Octave-4.2.1\lib\octave\4.2.1
-DEPENDPATH += C:\Octave\Octave-4.2.1\lib\octave\4.2.1
+INCLUDEPATH += C:/Octave/Octave-4.0.2/include/octave-4.0.2/octave
+DEPENDPATH += C:/Octave/Octave-4.0.2/include/octave-4.0.2/octave
 
-LIBS += -LC:\Octave\Octave-4.2.1\lib\octave\4.2.1\ -lliboctinterp.dll -lliboctave.dll
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/Octave/Octave-4.0.2/lib/octave/4.0.2/ -lliboctave.dll -lliboctinterp.dll
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/Octave/Octave-4.0.2/lib/octave/4.0.2/ -lliboctave.dll -lliboctinterp.dll
+
+INCLUDEPATH += $$PWD/Octave/Octave-4.0.2/lib/octave/4.0.2
+DEPENDPATH += $$PWD/Octave/Octave-4.0.2/lib/octave/4.0.2

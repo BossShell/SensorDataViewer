@@ -8,8 +8,6 @@
 #include <QLabel>
 #include <QScrollArea>
 #include <QScrollBar>
-#include <QtCharts/QChartView>
-#include <QtCharts/QLineSeries>
 
 #include <qcustomplot.h>
 
@@ -71,9 +69,9 @@ private:
     QImage image;
     double scaleFactor;
 
-    QAction *zoomInAct;
-    QAction *zoomOutAct;
-    QAction *normalSizeAct;
+//    QAction *zoomInAct;
+//    QAction *zoomOutAct;
+//    QAction *normalSizeAct;
 
     bool temp;
 };
