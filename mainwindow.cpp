@@ -26,6 +26,16 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     initializeGraph();
 
+    ui->hyperspecView->setDragMode(QGraphicsView::ScrollHandDrag);
+    //ui->hyperspecView->setCursor(Qt::ArrowCursor);
+
+    QImage image("E:/git/SensorDataViewer/capture.jpg");
+    item = new QGraphicsPixmapItem(QPixmap::fromImage(image));
+    scene = new QGraphicsScene(this);
+    ui->hyperspecView->setScene(scene);
+    scene->addItem(item);
+    ui->hyperspecView->fitInView(scene->itemsBoundingRect(), Qt::KeepAspectRatio);
+
 //    ui->imageLabel->setBackgroundRole(QPalette::Base);
 //    ui->imageLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
 //    ui->imageLabel->setScaledContents(true);
@@ -36,7 +46,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
     // Initialize octave
-    string_vector argv (2);
+    string_vector argv(2);
     argv(0) = "embedded";
     argv(1) = "-q";
 
@@ -75,62 +85,6 @@ void MainWindow::runOctaveScript(QString &fileName)
 
     octave_value_list output = feval("ReadFile", input, 2);
 }
-
-bool MainWindow::loadFile(const QString &fileName)
-{
-    /*QImageReader reader(fileName);
-    reader.setAutoTransform(true);
-    const QImage newImage = reader.read();
-
-    if (newImage.isNull()) {
-            QMessageBox::information(this, QGuiApplication::applicationDisplayName(),
-                                                             tr("Cannot load %1: %2").arg(QDir::toNativeSeparators(fileName), reader.errorString()));
-            return false;
-    }
-
-    setImage(newImage);
-
-    setWindowFilePath(fileName);
-
-    const QString message = tr("Opened \"%1\", %2x%3, Depth: %4").arg(QDir::toNativeSeparators(fileName)).arg(image.width()).arg(image.height()).arg(image.depth());
-    statusBar()->showMessage(message);*/
-    return true;
-}
-
-void MainWindow::setImage(const QImage &newImage)
-{
-    /*image = newImage;
-    ui->imageLabel->setPixmap(QPixmap::fromImage(image));
-    scaleFactor = 0.1;
-
-    ui->scrollArea->setVisible(true);
-    //fitToWindowAct->setEnabled(true);
-    //updateActions();
-
-    //if (!fitToWindowAct->isChecked())
-    ui->imageLabel->adjustSize();*/
-    /*octave_value_list functionArguments;
-    functionArguments(0) = 1;// Filename
-    functionArguments(1) = 1;
-
-    octave_value_list result = feval("ReadFile", functionArguments, 1);*/
-}
-
-//void MainWindow::zoomIn(){scaleImage(1.25);}
-//void MainWindow::zoomOut(){scaleImage(0.8);}
-
-/*void MainWindow::scaleImage(double factor)
-{
-    Q_ASSERT(ui->imageLabel->pixmap());
-    scaleFactor *= factor;
-    ui->imageLabel->resize(scaleFactor * ui->imageLabel->pixmap()->size());
-
-    //adjustScrollBar(scrollArea->horizontalScrollBar(), factor);
-    //adjustScrollBar(scrollArea->verticalScrollBar(), factor);
-
-    //zoomInAct->setEnabled(scaleFactor < 3.0);
-    //zoomOutAct->setEnabled(scaleFactor > 0.333);
-}*/
 
 void MainWindow::initializeGraph()
 {
@@ -207,9 +161,9 @@ void MainWindow::legendDoubleClick(QCPLegend *legend, QCPAbstractLegendItem *ite
     if (item)
     {
         QCPPlottableLegendItem *plItem = qobject_cast<QCPPlottableLegendItem*>(item);
-        bool ok;
-        QString newName = QInputDialog::getText(this, "QCustomPlot example", "New graph name:", QLineEdit::Normal, plItem->plottable()->name(), &ok);
-        if (ok)
+        bool okay;
+        QString newName = QInputDialog::getText(this, "QCustomPlot example", "New graph name:", QLineEdit::Normal, plItem->plottable()->name(), &okay);
+        if (okay)
         {
                 plItem->plottable()->setName(newName);
                 ui->customPlot->replot();
@@ -279,19 +233,40 @@ void MainWindow::contextMenuRequest(QPoint pos)
     QMenu *menu = new QMenu(this);
     menu->setAttribute(Qt::WA_DeleteOnClose);
 
-    if (ui->customPlot->legend->selectTest(pos, false) >= 0) // context menu on legend requested
+    if (ui->customPlot->legend->selectTest(pos, false) >= 0) // Legend
     {
         menu->addAction("New graph", this, SLOT(on_addButton_released()));
-        menu->addAction("Remove selected graphs", this, SLOT(removeSelectedGraphs()));
-        menu->addAction("Change graph color", this, SLOT(moveLegend()))->setData((int)(Qt::AlignTop|Qt::AlignRight));
-        menu->addAction("Save all graphs", this, SLOT(moveLegend()))->setData((int)(Qt::AlignBottom|Qt::AlignRight));
-    } else    // general context menu on graphs requested
-    {
-        menu->addAction("New graph", this, SLOT(on_addButton_released()));
-        if (ui->customPlot->selectedGraphs().size() > 0)
+
+        if (ui->customPlot->selectedGraphs().size() > 1)
+        {
+            menu->addAction("Edit color of selected graphs", this, SLOT(changeGraphColor()));
             menu->addAction("Remove selected graphs", this, SLOT(removeSelectedGraphs()));
+        }
+        else if (ui->customPlot->selectedGraphs().size() == 1)
+        {
+            menu->addAction("Edit color of selected graph", this, SLOT(changeGraphColor()));
+            menu->addAction("Remove selected graph", this, SLOT(removeSelectedGraphs()));
+        }
+
+        menu->addAction("Save graph window", this, SLOT(on_saveButton_released()));
+    }
+    else    // Not legend
+    {
+        menu->addAction("New graph", this, SLOT(on_addButton_released()));
+
+        if (ui->customPlot->selectedGraphs().size() > 1)
+        {
+            menu->addAction("Edit color of selected graphs", this, SLOT(changeGraphColor()));
+            menu->addAction("Remove selected graphs", this, SLOT(removeSelectedGraphs()));
+        }
+        else if (ui->customPlot->selectedGraphs().size() == 1)
+        {
+            menu->addAction("Edit color of selected graph", this, SLOT(changeGraphColor()));
+            menu->addAction("Remove selected graph", this, SLOT(removeSelectedGraphs()));
+        }
+
         if (ui->customPlot->graphCount() > 0)
-            menu->addAction("Save all graphs", this, SLOT(removeAllGraphs()));
+            menu->addAction("Save graph window", this, SLOT(on_saveButton_released()));
     }
 
     menu->popup(ui->customPlot->mapToGlobal(pos));
@@ -302,7 +277,18 @@ void MainWindow::removeSelectedGraphs()
     while (ui->customPlot->selectedGraphs().size() > 0)
     {
         ui->customPlot->removeGraph(ui->customPlot->selectedGraphs().first());
-        //ui->customPlot->replot();
+    }
+
+    ui->customPlot->replot();
+}
+
+void MainWindow::changeGraphColor()
+{
+    for(int i = 0; i < ui->customPlot->selectedGraphs().size(); ++i)
+    {
+        //qDebug() << "changeGraphColor()" << i;
+        QColor color = QColorDialog::getColor(Qt::black, this, "Graph Color",  QColorDialog::DontUseNativeDialog);
+        ui->customPlot->selectedGraphs().at(i)->setPen(QPen(color));
     }
 
     ui->customPlot->replot();
@@ -399,7 +385,17 @@ void MainWindow::on_clearButton_released()
 
 void MainWindow::on_saveButton_released()
 {
-    recenterGraph();
-    ui->customPlot->saveJpg("I dont care.jpg", 0, 0, 5.0);
+    QFileDialog saveImageFileDialog;
+    QString fileName = QDateTime::currentDateTime().toString("MMddyyyy_hhmmss")+".jpg";
+
+    saveImageFileDialog.setNameFilter("Images (*.jpg)");
+    saveImageFileDialog.setDirectory(QDir::currentPath());
+    saveImageFileDialog.selectFile(fileName);
+
+    if (saveImageFileDialog.exec())
+    {
+            fileName = fileName + ".jpg";
+            ui->customPlot->saveJpg(fileName, 0, 0, 5.0);
+    }
 }
 

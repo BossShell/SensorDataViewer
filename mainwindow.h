@@ -11,6 +11,10 @@
 
 #include <qcustomplot.h>
 
+#include <QGraphicsItem>
+#include <QGraphicsScene>
+#include <QtGui>
+
 class QAction;
 class QLabel;
 class QMenu;
@@ -35,9 +39,6 @@ public:
 
 private slots:
     void on_loadButton_released();
-    //void zoomIn();
-    //void zoomOut();
-    //void normalSize();
 
     // Slots for QCustomPlot
     void mousePress();
@@ -48,6 +49,7 @@ private slots:
     //void titleDoubleClick(QMouseEvent* event);
     void contextMenuRequest(QPoint pos);
     void removeSelectedGraphs();
+    void changeGraphColor();
 
     void on_saveButton_released();
     void on_addButton_released();
@@ -68,8 +70,11 @@ private:
     void recenterGraph();
     void addPoint(QVector<double> pointVector);
 
-    QImage image;
-    double scaleFactor;
+    QGraphicsItem *item;
+    QGraphicsScene *scene;
+
+//    QImage image;
+//    double scaleFactor;
 
 //    QAction *zoomInAct;
 //    QAction *zoomOutAct;
