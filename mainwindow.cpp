@@ -5,6 +5,7 @@
 #include <QVector>
 #include <QString>
 #include <QChar>
+#include <QMatrix>
 
 #include <QFileDialog>
 #include <QFile>
@@ -81,9 +82,13 @@ void MainWindow::runOctaveScript(QString &fileName)
     QByteArray ba = fileName.toLatin1();
     const char *fileNameChar = ba.data();
     input(0) = octave_value(fileNameChar);
-    input(1) = octave_value(0); //boolean
+    //input(1) = octave_value(0); //boolean
 
-    octave_value_list output = feval("ReadFile", input, 2);
+    octave_value_list output = feval("readMat", input);
+    qDebug() << "\nOctave Debug:\n";
+    qDebug() << output.length() << "item(s) in output.";
+    //output(0).convert_to_row_or_column_vector();
+    QVector3D outputVector = output(0);
 }
 
 void MainWindow::initializeGraph()
