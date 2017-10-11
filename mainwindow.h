@@ -48,11 +48,15 @@ private slots:
     void legendDoubleClick(QCPLegend *legend, QCPAbstractLegendItem *item);
     //void titleDoubleClick(QMouseEvent* event);
     void contextMenuRequest(QPoint pos);
+    void contextMenuAddRequested();
     void removeSelectedGraphs();
     void changeGraphColor();
 
+    void bandChange(int newBand);
+    void addPlot(QVector<double> pointVector);
+
     void on_saveButton_released();
-    void on_addButton_released();
+    void on_addButton_toggled();
     void on_clearButton_released();
     void on_centerGraphButton_released();
 
@@ -62,23 +66,21 @@ private:
     void setImage(const QImage &newImage);
     //void scaleImage(double factor);
 
-    void runOctaveScript(QString &fileName);
-
+    bool loadOctaveMatrix(QString &fileName);
+    void initializeGraphicsScene();
     // Private members for QCustomPlot
     void initializeGraph();
     int xMin, xMax, yMin, yMax;
     void recenterGraph();
-    void addPoint(QVector<double> pointVector);
 
-    QGraphicsItem *item;
+    //QGraphicsItem *item;
     QGraphicsScene *scene;
+    QVector<QImage> imageVector;
+    void addPoint(QPointF pos);
 
 //    QImage image;
 //    double scaleFactor;
 
-//    QAction *zoomInAct;
-//    QAction *zoomOutAct;
-//    QAction *normalSizeAct;
 
     bool temp;
 };

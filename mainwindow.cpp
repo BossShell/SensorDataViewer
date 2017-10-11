@@ -30,21 +30,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->hyperspecView->setDragMode(QGraphicsView::ScrollHandDrag);
     //ui->hyperspecView->setCursor(Qt::ArrowCursor);
 
-    QImage image("E:/git/SensorDataViewer/capture.jpg");
-    item = new QGraphicsPixmapItem(QPixmap::fromImage(image));
-    scene = new QGraphicsScene(this);
-    ui->hyperspecView->setScene(scene);
-    scene->addItem(item);
-    ui->hyperspecView->fitInView(scene->itemsBoundingRect(), Qt::KeepAspectRatio);
-
-//    ui->imageLabel->setBackgroundRole(QPalette::Base);
-//    ui->imageLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
-//    ui->imageLabel->setScaledContents(true);
-
-//    ui->scrollArea->setBackgroundRole(QPalette::Dark);
-//    ui->scrollArea->setWidgetResizable(true);
-//    ui->scrollArea->setVisible(false);
-
+    connect(ui->verticalSlider, SIGNAL(valueChanged(int)), this, SLOT(bandChange(int)));
 
     // Initialize octave
     string_vector argv(2);
@@ -52,7 +38,7 @@ MainWindow::MainWindow(QWidget *parent) :
     argv(1) = "-q";
 
     octave_main(2, argv.c_str_vec(), 1);
-    qDebug() << "octave_main complete";
+    qDebug() << "Octave initialized.";
 }
 
 MainWindow::~MainWindow()
@@ -60,7 +46,7 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::runOctaveScript(QString &fileName)
+bool MainWindow::loadOctaveMatrix(QString &fileName)
 {
     // Octave function to read hyperspectral:
     // function [x] = ReadFile(fileName, scale)
@@ -77,18 +63,87 @@ void MainWindow::runOctaveScript(QString &fileName)
     //            by the value indicated in the header file.
     // --------------------------------------------------------------------------
 
+#define OCTAVE_DEBUG
+
     octave_value_list input;
 
     QByteArray ba = fileName.toLatin1();
     const char *fileNameChar = ba.data();
     input(0) = octave_value(fileNameChar);
-    //input(1) = octave_value(0); //boolean
 
     octave_value_list output = feval("readMat", input);
+
+#ifdef OCTAVE_DEBUG
     qDebug() << "\nOctave Debug:\n";
     qDebug() << output.length() << "item(s) in output.";
-    //output(0).convert_to_row_or_column_vector();
-    QVector3D outputVector = output(0);
+
+    for(int i = 0; i < output.length(); i++)
+    {
+        if(output(i).is_matrix_type())
+        {
+            qDebug() << "Output:" << i
+                     << " Type:" << QString::fromStdString(output(0).type_name())
+                     << " Rows:" << output(i).rows()
+                     << " Columns:" << output(i).columns();
+        } else
+        {
+            qDebug() << "Output:" << i
+                     << " Type:" << QString::fromStdString(output(0).type_name())
+                     << " Length:" << output(i).length();
+        }
+    }
+#endif
+
+    Matrix outputMatrix = output(0).matrix_value();
+    int matrixRows = outputMatrix.rows();
+    int matrixCols = outputMatrix.columns();
+
+    int numberChannels = matrixCols / output(0).columns();
+
+    matrixCols = matrixCols / numberChannels;
+
+    QImage bandImage(QSize(matrixCols, matrixRows), QImage::Format_Grayscale8);
+    int temp;
+
+    for(int k = 0; k < numberChannels; k++)
+    {
+        for(int i = 0; i < matrixRows; i++)
+        {
+            for(int j = 0; j < matrixCols; j++)
+            {
+                temp = 256 - outputMatrix.elem(i, (matrixCols * k) + j) / 2;
+                if(temp < 0) temp = 0;
+                bandImage.setPixelColor(j, i, qGray(temp, temp, temp));
+            }
+        }
+        imageVector.append(bandImage);
+    }
+
+    ui->verticalSlider->setMinimum(0);
+    ui->verticalSlider->setMaximum(numberChannels - 1);
+
+#ifdef OCTAVE_DEBUG
+    qDebug() << "\nimageVector:"
+             << " Size:" << imageVector[0].size()
+             << " Number of channels:" << imageVector.length();
+#endif
+
+    if(imageVector.length()) return true;
+    else return false;
+}
+
+void MainWindow::initializeGraphicsScene()
+{
+    scene = new QGraphicsScene(this);
+
+    QGraphicsPixmapItem *item = new QGraphicsPixmapItem(QPixmap::fromImage(imageVector[ui->verticalSlider->value()]));
+    scene = new QGraphicsScene(this);
+    scene->addItem(item);
+
+    ui->hyperspecView->setScene(scene);
+    ui->hyperspecView->fitInView(scene->itemsBoundingRect(), Qt::KeepAspectRatio);
+
+    connect(ui->hyperspecView, SIGNAL(mouseReleaseEvent(QPointF)), this, SLOT(addPoint(QPointF)));
 }
 
 void MainWindow::initializeGraph()
@@ -257,7 +312,7 @@ void MainWindow::contextMenuRequest(QPoint pos)
     }
     else    // Not legend
     {
-        menu->addAction("New graph", this, SLOT(on_addButton_released()));
+        menu->addAction("New graph", this, SLOT(contextMenuAddRequested()));
 
         if (ui->customPlot->selectedGraphs().size() > 1)
         {
@@ -324,7 +379,7 @@ void MainWindow::graphClicked(QCPAbstractPlottable *plottable, int dataIndex)
     ui->statusBar->showMessage(message, 2500);
 }
 
-void MainWindow::addPoint(QVector<double> pointVector)
+void MainWindow::addPlot(QVector<double> pointVector)
 {
     // Retrieves current number of graphs in ui->customPlot
     int graphCount = ui->customPlot->graphCount();
@@ -339,41 +394,54 @@ void MainWindow::addPoint(QVector<double> pointVector)
     ui->customPlot->legend->setVisible(true);
     ui->customPlot->replot();
 }
+void MainWindow::addPoint(QPointF pos)
+{
+    QPoint point = pos.toPoint();
+
+    qDebug() << point.x() << point.y();
+}
+
+void MainWindow::bandChange(int newBand)
+{
+    scene->clear();
+    QGraphicsPixmapItem *item = new QGraphicsPixmapItem(QPixmap::fromImage(imageVector[newBand]));
+    //scene->addItem(new QGraphicsPixmapItem(QPixmap::fromImage(imageVector[newBand])));
+    scene->addItem(item);
+    ui->hyperspecView->update();
+}
 
 void MainWindow::on_loadButton_released()
 {
+    bool okay;
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), QString());
 
-    runOctaveScript(fileName);
+    okay = loadOctaveMatrix(fileName);
 
-    /*QImageReader reader(fileName);
-    reader.setAutoTransform(true);
-    const QImage newImage = reader.read();
-
-    setImage(newImage);
-    setWindowFilePath(fileName);
-
-    this->update();*/
+    if (okay) initializeGraphicsScene();
 }
 
-void MainWindow::on_addButton_released()
+void MainWindow::on_addButton_toggled()
 {
-    QVector<double> pointVector(xMax - xMin + 1);
-    int graphCount = ui->customPlot->graphCount();
+    bool checked = ui->addButton->isChecked();
 
-    if(graphCount == 1)
+    if (checked)
     {
-        for (int i = xMin; i <= xMax; ++i)
-            pointVector[i] = qSin(.1*i);
-        temp = false;
-    } else
+        ui->hyperspecView->setDragMode(QGraphicsView::NoDrag);
+        //connect(scene, )
+    }
+    else
     {
-        for (int i = xMin; i <= xMax; ++i)
-            pointVector[i] = graphCount;
-        temp = true;
+        ui->hyperspecView->setDragMode(QGraphicsView::ScrollHandDrag);
+        //disconnect()
     }
 
-    addPoint(pointVector);
+    QVector<double> pointVector(xMax - xMin + 1);
+    //addPoint(pointVector);
+}
+
+void MainWindow::contextMenuAddRequested()
+{
+    ui->addButton->setChecked(true);
 }
 
 void MainWindow::on_centerGraphButton_released()

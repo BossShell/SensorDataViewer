@@ -25,14 +25,8 @@ void CustomGraphicsView::wheelEvent(QWheelEvent *zoomEvent)
     }
 }
 
-//void CustomGraphicsView::mousePressEvent(QMouseEvent *event)
-//{
-//    QGraphicsView::mousePressEvent(event);
-//    ui->hyperspecView->setCursor(Qt::SizeAllCursor);
-//}
-
-//void CustomGraphicsView::mouseReleaseEvent(QMouseEvent *event)
-//{
-//    QGraphicsView::mouseReleaseEvent(event);
-//    ui->hyperspecView->setCursor(Qt::SizeAllCursor);
-//}
+void CustomGraphicsView::mouseReleaseEvent(QMouseEvent *event)
+{
+    QPoint point = event->pos();
+   // emit mouseReleaseEvent(point);
+}
