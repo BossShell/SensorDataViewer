@@ -28,6 +28,9 @@ FORMS += \
 
 #LIBS += -LC:/Octave/Octave-4.0.2/lib/octave/4.0.2/ -lliboctinterp.dll -lliboctave.dll
 
+INCLUDEPATH += $$PWD/bin
+DEPENDPATH += $$PWD/bin
+
 INCLUDEPATH += $$PWD/Octave/octave-4.0.3/include/octave-4.0.3/octave
 DEPENDPATH += $$PWD/Octave/octave-4.0.3/include/octave-4.0.3/octave
 
