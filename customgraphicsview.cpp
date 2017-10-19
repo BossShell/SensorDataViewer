@@ -25,8 +25,8 @@ void CustomGraphicsView::wheelEvent(QWheelEvent *zoomEvent)
     }
 }
 
-void CustomGraphicsView::mouseReleaseEvent(QMouseEvent *event)
-{
-    QPoint point = event->pos();
+//void CustomGraphicsView::mouseReleaseEvent(QMouseEvent *event)
+//{
+    //QPoint point = event->pos();
    // emit mouseReleaseEvent(point);
-}
+//}

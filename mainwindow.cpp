@@ -102,8 +102,8 @@ bool MainWindow::loadOctaveMatrix(QString &fileName)
 
     matrixCols = matrixCols / numberChannels;
 
-    QImage bandImage(QSize(matrixCols, matrixRows), QImage::Format_Grayscale8);
-    int temp;
+    QImage bandImage(QSize(matrixRows, matrixCols), QImage::Format_RGB888);
+    int redValue, blueValue;
 
     for(int k = 0; k < numberChannels; k++)
     {
@@ -111,9 +111,11 @@ bool MainWindow::loadOctaveMatrix(QString &fileName)
         {
             for(int j = 0; j < matrixCols; j++)
             {
-                temp = 256 - outputMatrix.elem(i, (matrixCols * k) + j) / 2;
-                if(temp < 0) temp = 0;
-                bandImage.setPixelColor(j, i, qGray(temp, temp, temp));
+                // {0-4096}
+                blueValue = 255 * outputMatrix.elem(i, (matrixCols * k) + j) / 4096*4;
+                redValue = 255 - 255 * ( outputMatrix.elem(i, (matrixCols * k) + j) / 4096 * 4);
+                //qDebug() << "Red:" << redValue << " Blue:" << blueValue;
+                bandImage.setPixelColor(QPoint(i, j), QColor(redValue, 0, blueValue));
             }
         }
         imageVector.append(bandImage);
