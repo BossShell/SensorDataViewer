@@ -103,7 +103,9 @@ bool MainWindow::loadOctaveMatrix(QString &fileName)
     matrixCols = matrixCols / numberChannels;
 
     QImage bandImage(QSize(matrixRows, matrixCols), QImage::Format_RGB888);
-    int redValue, blueValue;
+    int redValue, blueValue, greenValue;
+    int hValue, sValue, lValue;
+    QColor color;
 
     for(int k = 0; k < numberChannels; k++)
     {
@@ -111,11 +113,26 @@ bool MainWindow::loadOctaveMatrix(QString &fileName)
         {
             for(int j = 0; j < matrixCols; j++)
             {
+                //redValue = 0; blueValue = 0; greenValue = 0;
                 // {0-4096}
-                blueValue = 255 * outputMatrix.elem(i, (matrixCols * k) + j) / 4096*4;
-                redValue = 255 - 255 * ( outputMatrix.elem(i, (matrixCols * k) + j) / 4096 * 4);
+                if (outputMatrix.elem(i, (matrixCols * k) + j) > 2048)
+                    outputMatrix.elem(i, (matrixCols * k) + j) = 2048;
+
+                if (outputMatrix.elem(i, (matrixCols * k) + j) < 1028) {
+                    hValue = 240;
+                    sValue = 100 * ( outputMatrix.elem(i, (matrixCols * k) + j) / 1028);
+                    lValue = 100 - 50 * ( outputMatrix.elem(i, (matrixCols * k) + j) / 1028);
+                    //blueValue = 256 - 256 * ( outputMatrix.elem(i, (matrixCols * k) + j) / 4096);
+                }
+                else {
+                    hValue = 0;
+                    sValue = 100 * ( outputMatrix.elem(i, (matrixCols * k) + j) - 1028) / 1028;
+                    lValue = 100 - 50 * ( outputMatrix.elem(i, (matrixCols * k) + j) - 1028) / 1028;
+                }
+                color.setHsl(hValue, sValue, lValue);
+
                 //qDebug() << "Red:" << redValue << " Blue:" << blueValue;
-                bandImage.setPixelColor(QPoint(i, j), QColor(redValue, 0, blueValue));
+                bandImage.setPixelColor(QPoint(i, j), color);
             }
         }
         imageVector.append(bandImage);
