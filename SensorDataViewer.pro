@@ -16,12 +16,14 @@ SOURCES += \
         main.cpp \
         mainwindow.cpp \
         qcustomplot.cpp \
-        customgraphicsview.cpp
+        customgraphicsview.cpp \
+    customgraphicsscene.cpp
 
 HEADERS += \
         mainwindow.h \
         qcustomplot.h \
-        customgraphicsview.h
+        customgraphicsview.h \
+    customgraphicsscene.h
 
 FORMS += \
         mainwindow.ui
@@ -36,3 +38,6 @@ else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/Octave/octave-4.0.3/lib
 
 INCLUDEPATH += $$PWD/Octave/octave-4.0.3/lib/octave/4.0.3
 DEPENDPATH += $$PWD/Octave/octave-4.0.3/lib/octave/4.0.3
+
+DISTFILES += \
+    style.qss

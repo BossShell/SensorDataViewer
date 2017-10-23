@@ -25,6 +25,12 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    QFile styleFile("style.qss");
+    styleFile.open(QFile::ReadOnly);
+    QString style(styleFile.readAll());
+    this->setStyleSheet(style);
+
     initializeGraph();
 
     ui->hyperspecView->setDragMode(QGraphicsView::ScrollHandDrag);
@@ -210,6 +216,57 @@ void MainWindow::initializeGraph()
     // Sets up policy and connects slot for context menu popup
     ui->customPlot->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->customPlot, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(contextMenuRequest(QPoint)));
+
+    // Bottom xAxis Styling
+    ui->customPlot->xAxis->setBasePen(QPen(Qt::white, 1));
+    ui->customPlot->xAxis->setTickPen(QPen(Qt::white, 1));
+    ui->customPlot->xAxis->setSubTickPen(QPen(Qt::white, 1));
+    ui->customPlot->xAxis->setTickLabelColor(Qt::white);
+    ui->customPlot->xAxis->grid()->setPen(QPen(QColor(140, 140, 140), 1, Qt::DotLine));
+    ui->customPlot->xAxis->grid()->setSubGridPen(QPen(QColor(80, 80, 80), 1, Qt::DotLine));
+    ui->customPlot->xAxis->grid()->setSubGridVisible(true);
+    ui->customPlot->xAxis->grid()->setZeroLinePen(Qt::NoPen);
+    ui->customPlot->xAxis->setUpperEnding(QCPLineEnding::esSpikeArrow);
+
+    // Left yAxis Styling
+    ui->customPlot->yAxis->setBasePen(QPen(Qt::white, 1));
+    ui->customPlot->yAxis->setTickPen(QPen(Qt::white, 1));
+    ui->customPlot->yAxis->setSubTickPen(QPen(Qt::white, 1));
+    ui->customPlot->yAxis->setTickLabelColor(Qt::white);
+    ui->customPlot->yAxis->grid()->setPen(QPen(QColor(140, 140, 140), 1, Qt::DotLine));
+    ui->customPlot->yAxis->grid()->setSubGridPen(QPen(QColor(80, 80, 80), 1, Qt::DotLine));
+    ui->customPlot->yAxis->grid()->setSubGridVisible(true);
+    ui->customPlot->yAxis->grid()->setZeroLinePen(Qt::NoPen);
+    ui->customPlot->yAxis->setUpperEnding(QCPLineEnding::esSpikeArrow);
+
+    // Top xAxis Styling
+    ui->customPlot->xAxis2->setBasePen(QPen(Qt::white, 1));
+    ui->customPlot->xAxis2->setTickPen(QPen(Qt::white, 1));
+    ui->customPlot->xAxis2->setSubTickPen(QPen(Qt::white, 1));
+    ui->customPlot->xAxis2->setTickLabelColor(Qt::white);
+    ui->customPlot->xAxis2->grid()->setPen(QPen(QColor(140, 140, 140), 1, Qt::DotLine));
+    ui->customPlot->xAxis2->grid()->setSubGridPen(QPen(QColor(80, 80, 80), 1, Qt::DotLine));
+    ui->customPlot->xAxis2->grid()->setSubGridVisible(true);
+    ui->customPlot->xAxis2->grid()->setZeroLinePen(Qt::NoPen);
+
+    // Right yAxis Styling
+    ui->customPlot->yAxis2->setBasePen(QPen(Qt::white, 1));
+    ui->customPlot->yAxis2->setTickPen(QPen(Qt::white, 1));
+    ui->customPlot->yAxis2->setSubTickPen(QPen(Qt::white, 1));
+    ui->customPlot->yAxis2->setTickLabelColor(Qt::white);
+    ui->customPlot->yAxis2->grid()->setPen(QPen(QColor(140, 140, 140), 1, Qt::DotLine));
+    ui->customPlot->yAxis2->grid()->setSubGridPen(QPen(QColor(80, 80, 80), 1, Qt::DotLine));
+    ui->customPlot->yAxis2->grid()->setSubGridVisible(true);
+    ui->customPlot->yAxis2->grid()->setZeroLinePen(Qt::NoPen);
+
+    ui->customPlot->setBackground(QColor(0x3a, 0x3a, 0x3a));
+
+    QLinearGradient axisRectGradient;
+    axisRectGradient.setStart(0, 0);
+    axisRectGradient.setFinalStop(0, 350);
+    axisRectGradient.setColorAt(0, QColor(0x80, 0x80, 0x80));
+    axisRectGradient.setColorAt(1, QColor(30, 30, 30));
+    ui->customPlot->axisRect()->setBackground(axisRectGradient);
 }
 
 /*
@@ -413,6 +470,7 @@ void MainWindow::addPlot(QVector<double> pointVector)
     ui->customPlot->legend->setVisible(true);
     ui->customPlot->replot();
 }
+
 void MainWindow::addPoint(QPointF pos)
 {
     QPoint point = pos.toPoint();
@@ -422,6 +480,7 @@ void MainWindow::addPoint(QPointF pos)
 
 void MainWindow::bandChange(int newBand)
 {
+    // FIXME: Add check for when no image is loaded
     scene->clear();
     QGraphicsPixmapItem *item = new QGraphicsPixmapItem(QPixmap::fromImage(imageVector[newBand]));
     //scene->addItem(new QGraphicsPixmapItem(QPixmap::fromImage(imageVector[newBand])));

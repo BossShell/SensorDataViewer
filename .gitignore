@@ -37,6 +37,7 @@ Thumbs.db
 .octaverc
 Makefile
 Makefile.Debug
+Makefile.Release
 Octave/
 SensorDataViewer.pro.user
 SensorDataViewer.pro.user.7ac6559
