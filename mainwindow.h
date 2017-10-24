@@ -3,16 +3,21 @@
 
 #include <QMainWindow>
 
-#include <QImage>
-#include <QAction>
-#include <QLabel>
-#include <QScrollArea>
-#include <QScrollBar>
+//#include <QImage>
+//#include <QAction>
+//#include <QLabel>
+//#include <QScrollArea>
+//#include <QScrollBar>
 
 #include <qcustomplot.h>
 
-#include <QGraphicsItem>
-#include <QGraphicsScene>
+#include <oct.h>
+#include <octave.h>
+#include <parse.h>
+#include <toplev.h>
+
+//#include <QGraphicsItem>
+//#include <QGraphicsScene>
 #include <QtGui>
 
 class QAction;
@@ -38,9 +43,10 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_loadButton_released();
 
-    // Slots for QCustomPlot
+    /****************/
+    /*  QCustomPlot */
+    /****************/
     void mousePress();
     void mouseWheel();
     void selectionChanged();
@@ -52,35 +58,53 @@ private slots:
     void removeSelectedGraphs();
     void changeGraphColor();
 
-    void bandChange(int newBand);
-    void addPlot(QVector<double> pointVector);
+
+    /*************************/
+    /* QGraphicsView Buttons */
+    /*************************/
+
+    void on_loadButton_released();
+    void on_resetZoomButton_released();
+
+
+    /***********************/
+    /* QCustomPlot Buttons */
+    /***********************/
 
     void on_saveButton_released();
     void on_addButton_toggled();
     void on_clearButton_released();
     void on_centerGraphButton_released();
 
+
+    /***************/
+    /* Other Slots */
+    /***************/
+
+    void bandChange(int newBand);
+    void addPoint(QGraphicsSceneMouseEvent *event);
+
 private:
     Ui::MainWindow *ui;
-    //void createActions();
     void setImage(const QImage &newImage);
-    //void scaleImage(double factor);
 
+    Matrix outputMatrix;
+    int matrixRows, matrixCols;
     bool loadOctaveMatrix(QString &fileName);
     void initializeGraphicsScene();
-    // Private members for QCustomPlot
+
+    /***********************************/
+    /* Private members for QCustomPlot */
+    /***********************************/
+
     void initializeGraph();
     int xMin, xMax, yMin, yMax;
     void recenterGraph();
 
-    //QGraphicsItem *item;
+
     QGraphicsScene *scene;
     QVector<QImage> imageVector;
-    void addPoint(QPointF pos);
-
-//    QImage image;
-//    double scaleFactor;
-
+    void addPlot(QVector<double> pointVector);
 
     bool temp;
 };

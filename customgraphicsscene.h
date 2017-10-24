@@ -7,19 +7,16 @@
 
 class CustomGraphicsScene : public QGraphicsScene
 {
+    Q_OBJECT
+
 public:
     CustomGraphicsScene(QWidget *parent = 0);
 
 signals:
-    //void mouseReleaseEvent(QPoint point);
+    void mousePress(QGraphicsSceneMouseEvent *event);
 
 public:
-    //virtual void wheelEvent(QWheelEvent *event);
-    //virtual void mousePressEvent(QMouseEvent *event);
-    //virtual void mouseReleaseEvent(QMouseEvent *event);
-    //virtual void mousePressEvent(QGraphicsSceneMouseEvent *event);
-    //virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
+    virtual void mousePressEvent(QGraphicsSceneMouseEvent *event);
 };
-
 
 #endif // CUSTOMGRAPHICSSCENE_H

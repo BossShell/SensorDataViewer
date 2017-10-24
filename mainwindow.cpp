@@ -1,24 +1,25 @@
+#define OCTAVE_DEBUG
+//#define RB_COLORMAP
+#define HSV_COLORMAP
+
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QtWidgets>
+#include "customgraphicsscene.h"
 
-#include <QVector>
-#include <QString>
-#include <QChar>
-#include <QMatrix>
+//#include <QVector>
+//#include <QString>
+//#include <QChar>
+//#include <QMatrix>
 
-#include <QFileDialog>
-#include <QFile>
-#include <QMessageBox>
-#include <QTextStream>
-
-#include <oct.h>
-#include <octave.h>
-#include <parse.h>
-#include <toplev.h>
+//#include <QFileDialog>
+//#include <QFile>
+//#include <QMessageBox>
+//#include <QTextStream>
 
 #include <sstream>
-#include <QTextStream>
+//#include <QTextStream>
+
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -34,7 +35,9 @@ MainWindow::MainWindow(QWidget *parent) :
     initializeGraph();
 
     ui->hyperspecView->setDragMode(QGraphicsView::ScrollHandDrag);
-    //ui->hyperspecView->setCursor(Qt::ArrowCursor);
+    ui->verticalSlider->setEnabled(false);
+    ui->resetZoomButton->setEnabled(false);
+    ui->addButton->setEnabled(false);
 
     connect(ui->verticalSlider, SIGNAL(valueChanged(int)), this, SLOT(bandChange(int)));
 
@@ -69,7 +72,8 @@ bool MainWindow::loadOctaveMatrix(QString &fileName)
     //            by the value indicated in the header file.
     // --------------------------------------------------------------------------
 
-#define OCTAVE_DEBUG
+    imageVector.clear();
+    outputMatrix.clear();
 
     octave_value_list input;
 
@@ -79,47 +83,59 @@ bool MainWindow::loadOctaveMatrix(QString &fileName)
 
     octave_value_list output = feval("readMat", input);
 
-#ifdef OCTAVE_DEBUG
-    qDebug() << "\nOctave Debug:\n";
-    qDebug() << output.length() << "item(s) in output.";
 
-    for(int i = 0; i < output.length(); i++)
-    {
-        if(output(i).is_matrix_type())
+    #ifdef OCTAVE_DEBUG
+        qDebug() << "\nOctave Debug:\n";
+        qDebug() << output.length() << "item(s) in output.";
+
+        for(int i = 0; i < output.length(); i++)
         {
-            qDebug() << "Output:" << i
-                     << " Type:" << QString::fromStdString(output(0).type_name())
-                     << " Rows:" << output(i).rows()
-                     << " Columns:" << output(i).columns();
-        } else
-        {
-            qDebug() << "Output:" << i
-                     << " Type:" << QString::fromStdString(output(0).type_name())
-                     << " Length:" << output(i).length();
+            if(output(i).is_matrix_type())
+            {
+                qDebug() << "Output:" << i
+                         << " Type:" << QString::fromStdString(output(0).type_name())
+                         << " Rows:" << output(i).rows()
+                         << " Columns:" << output(i).columns();
+            } else
+            {
+                qDebug() << "Output:" << i
+                         << " Type:" << QString::fromStdString(output(0).type_name())
+                         << " Length:" << output(i).length();
+            }
         }
-    }
-#endif
+    #endif
 
-    Matrix outputMatrix = output(0).matrix_value();
-    int matrixRows = outputMatrix.rows();
-    int matrixCols = outputMatrix.columns();
+
+    outputMatrix = output(0).matrix_value();
+    matrixRows = outputMatrix.rows();
+    matrixCols = outputMatrix.columns();
 
     int numberChannels = matrixCols / output(0).columns();
 
     matrixCols = matrixCols / numberChannels;
 
     QImage bandImage(QSize(matrixRows, matrixCols), QImage::Format_RGB888);
-    int redValue, blueValue, greenValue;
     int hValue, sValue, lValue;
     QColor color;
 
+
+#ifdef RB_COLORMAP
+
+    #ifdef OCTAVE_DEBUG
+        qDebug() << "\n\nBlue<->Red Colormap Debug:\n";
+    #endif
+
     for(int k = 0; k < numberChannels; k++)
     {
+        #ifdef OCTAVE_DEBUG
+            QTime time;
+            time.restart();
+        #endif
+
         for(int i = 0; i < matrixRows; i++)
         {
             for(int j = 0; j < matrixCols; j++)
             {
-                //redValue = 0; blueValue = 0; greenValue = 0;
                 // {0-4096}
                 if (outputMatrix.elem(i, (matrixCols * k) + j) > 2048)
                     outputMatrix.elem(i, (matrixCols * k) + j) = 2048;
@@ -128,7 +144,6 @@ bool MainWindow::loadOctaveMatrix(QString &fileName)
                     hValue = 240;
                     sValue = 100 * ( outputMatrix.elem(i, (matrixCols * k) + j) / 1028);
                     lValue = 100 - 50 * ( outputMatrix.elem(i, (matrixCols * k) + j) / 1028);
-                    //blueValue = 256 - 256 * ( outputMatrix.elem(i, (matrixCols * k) + j) / 4096);
                 }
                 else {
                     hValue = 0;
@@ -137,42 +152,95 @@ bool MainWindow::loadOctaveMatrix(QString &fileName)
                 }
                 color.setHsl(hValue, sValue, lValue);
 
-                //qDebug() << "Red:" << redValue << " Blue:" << blueValue;
                 bandImage.setPixelColor(QPoint(i, j), color);
             }
         }
         imageVector.append(bandImage);
+
+        #ifdef OCTAVE_DEBUG
+            qDebug() << "Band" << k
+                     << "time:" << time.elapsed() << "ms";
+        #endif
     }
+
+#endif
+
+#ifdef HSV_COLORMAP
+    sValue =  100;
+    lValue = 100;
+
+    #ifdef OCTAVE_DEBUG
+        qDebug() << "\nHSV Colormap Debug:\n";
+    #endif
+
+    for(int k = 0; k < numberChannels; k++)
+    {
+        #ifdef OCTAVE_DEBUG
+            QTime time;
+            time.restart();
+        #endif
+
+        for(int i = 0; i < matrixRows; i++)
+        {
+            for(int j = 0; j < matrixCols; j++)
+            {
+                hValue = 360 * ( outputMatrix.elem(i, (matrixCols * k) + j) / 4096);
+                color.setHsv(hValue, sValue, lValue);
+
+                bandImage.setPixelColor(QPoint(i, j), color);
+            }
+        }
+        imageVector.append(bandImage);
+
+        #ifdef OCTAVE_DEBUG
+            qDebug() << "Band" << k
+                     << "time:" << time.elapsed() << "ms";
+        #endif
+    }
+
+#endif
 
     ui->verticalSlider->setMinimum(0);
     ui->verticalSlider->setMaximum(numberChannels - 1);
 
-#ifdef OCTAVE_DEBUG
-    qDebug() << "\nimageVector:"
-             << " Size:" << imageVector[0].size()
-             << " Number of channels:" << imageVector.length();
-#endif
+    #ifdef OCTAVE_DEBUG
+        qDebug() << "\nMainWindow::imageVector:"
+                 << " Size:" << imageVector[0].size()
+                 << " Number of channels:" << imageVector.length();
+    #endif
 
-    if(imageVector.length()) return true;
-    else return false;
+    if(imageVector.length())
+        return true;
+    else
+        return false;
 }
 
 void MainWindow::initializeGraphicsScene()
 {
-    scene = new QGraphicsScene(this);
-
     QGraphicsPixmapItem *item = new QGraphicsPixmapItem(QPixmap::fromImage(imageVector[ui->verticalSlider->value()]));
-    scene = new QGraphicsScene(this);
+    //scene = new QGraphicsScene(this);
+    scene = new CustomGraphicsScene(ui->hyperspecView);
     scene->addItem(item);
 
     ui->hyperspecView->setScene(scene);
     ui->hyperspecView->fitInView(scene->itemsBoundingRect(), Qt::KeepAspectRatio);
 
-    connect(ui->hyperspecView, SIGNAL(mouseReleaseEvent(QPointF)), this, SLOT(addPoint(QPointF)));
+    ui->verticalSlider->setEnabled(true);
+    ui->resetZoomButton->setEnabled(true);
+    ui->addButton->setEnabled(true);
+    xMax = imageVector.length() - 1;
+    recenterGraph();
 }
 
 void MainWindow::initializeGraph()
 {
+    // Desired axes ranges for graphs
+    // Note: xMax is modified once an image is loaded.
+    xMin = 0;
+    xMax = 270;
+    yMin = 0;
+    yMax = 4096;
+
     recenterGraph();
     ui->customPlot->axisRect()->setupFullAxesBox();
     ui->customPlot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignBottom|Qt::AlignRight);
@@ -272,8 +340,8 @@ void MainWindow::initializeGraph()
 /*
 // Allows the graph title to be chenged by double clicking it.
 //
-// If desired, slot must be uncommented in mainwindow.h as well as
-// slot connection in MainWindow::initializeGraph()
+// If desired, slot must be uncommented in mainwindow.h as well as the
+// slot connection in MainWindow::initializeGraph() located in this file
 
 void MainWindow::titleDoubleClick(QMouseEvent* event)
 {
@@ -432,12 +500,6 @@ void MainWindow::changeGraphColor()
 
 void MainWindow::recenterGraph()
 {
-    // Desired axes ranges for graphs
-    xMin = 0;
-    xMax = 269;
-    yMin = -2;
-    yMax = 2;
-
     ui->customPlot->xAxis->setRange(xMin, xMax);
     ui->customPlot->yAxis->setRange(yMin, yMax);
     ui->customPlot->replot();
@@ -471,21 +533,37 @@ void MainWindow::addPlot(QVector<double> pointVector)
     ui->customPlot->replot();
 }
 
-void MainWindow::addPoint(QPointF pos)
-{
-    QPoint point = pos.toPoint();
+void MainWindow::addPoint(QGraphicsSceneMouseEvent *event)
+{ 
+    int x = nearbyint(event->scenePos().x());
+    int y = nearbyint(event->scenePos().y());
+    QPoint point(x, y);
 
-    qDebug() << point.x() << point.y();
+    QVector<double> pointVector;
+
+    for(int i = 0; i < imageVector.length(); i++)
+    {
+        pointVector.append(outputMatrix.elem(x, (matrixCols * i) + y));
+    }
+
+    qDebug() << "\naddPoint Debug:"
+             << "\n(x , y):" << point.x()<< "," << point.y()
+             << "pointVector:" << pointVector;
+
+    addPlot(pointVector);
 }
 
 void MainWindow::bandChange(int newBand)
 {
-    // FIXME: Add check for when no image is loaded
-    scene->clear();
-    QGraphicsPixmapItem *item = new QGraphicsPixmapItem(QPixmap::fromImage(imageVector[newBand]));
-    //scene->addItem(new QGraphicsPixmapItem(QPixmap::fromImage(imageVector[newBand])));
-    scene->addItem(item);
-    ui->hyperspecView->update();
+    if(imageVector.length() > 1)
+    {
+        // FIXME: Add check for when no image is loaded
+        scene->clear();
+        QGraphicsPixmapItem *item = new QGraphicsPixmapItem(QPixmap::fromImage(imageVector[newBand]));
+        //scene->addItem(new QGraphicsPixmapItem(QPixmap::fromImage(imageVector[newBand])));
+        scene->addItem(item);
+        ui->hyperspecView->update();
+    }
 }
 
 void MainWindow::on_loadButton_released()
@@ -505,16 +583,15 @@ void MainWindow::on_addButton_toggled()
     if (checked)
     {
         ui->hyperspecView->setDragMode(QGraphicsView::NoDrag);
-        //connect(scene, )
+        connect(scene, SIGNAL(mousePress(QGraphicsSceneMouseEvent*)),
+                this, SLOT(addPoint(QGraphicsSceneMouseEvent*)));
     }
     else
     {
         ui->hyperspecView->setDragMode(QGraphicsView::ScrollHandDrag);
-        //disconnect()
+        disconnect(scene, SIGNAL(mousePress(QGraphicsSceneMouseEvent*)),
+                this, SLOT(addPoint(QGraphicsSceneMouseEvent*)));
     }
-
-    QVector<double> pointVector(xMax - xMin + 1);
-    //addPoint(pointVector);
 }
 
 void MainWindow::contextMenuAddRequested()
@@ -531,6 +608,7 @@ void MainWindow::on_clearButton_released()
 {
     ui->customPlot->clearGraphs();
     ui->customPlot->legend->setVisible(false);
+    ui->addButton->setChecked(false);
     recenterGraph();
 }
 
@@ -550,3 +628,7 @@ void MainWindow::on_saveButton_released()
     }
 }
 
+void MainWindow::on_resetZoomButton_released()
+{
+    ui->hyperspecView->fitInView(scene->itemsBoundingRect(), Qt::KeepAspectRatio);
+}

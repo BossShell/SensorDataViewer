@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>569</width>
-    <height>658</height>
+    <height>631</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -27,7 +27,7 @@
      <string>Load</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="zoomOut">
+   <widget class="QPushButton" name="resetZoomButton">
     <property name="geometry">
      <rect>
       <x>410</x>

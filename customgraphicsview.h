@@ -11,7 +11,7 @@ public:
     CustomGraphicsView(QWidget* parent = 0);
 
 signals:
-    void mouseReleaseEvent(QPoint point);
+    //void mouseReleaseEvent(QPoint point);
 
 public:
     virtual void wheelEvent(QWheelEvent *event);

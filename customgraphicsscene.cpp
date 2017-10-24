@@ -6,3 +6,8 @@ CustomGraphicsScene::CustomGraphicsScene(QWidget *parent) : QGraphicsScene(paren
 {
 
 }
+
+void CustomGraphicsScene::mousePressEvent(QGraphicsSceneMouseEvent *event)
+{
+    emit CustomGraphicsScene::mousePress(event);
+}

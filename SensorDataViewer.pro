@@ -17,13 +17,13 @@ SOURCES += \
         mainwindow.cpp \
         qcustomplot.cpp \
         customgraphicsview.cpp \
-    customgraphicsscene.cpp
+        customgraphicsscene.cpp
 
 HEADERS += \
         mainwindow.h \
         qcustomplot.h \
         customgraphicsview.h \
-    customgraphicsscene.h
+        customgraphicsscene.h
 
 FORMS += \
         mainwindow.ui
