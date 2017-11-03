@@ -2,8 +2,8 @@
 #define CUSTOMGRAPHICSSCENE_H
 
 #include <QGraphicsScene>
-#include <QtWidgets>
-#include <QWidget>
+//#include <QtWidgets>
+//#include <QWidget>
 
 class CustomGraphicsScene : public QGraphicsScene
 {

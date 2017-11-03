@@ -2,31 +2,17 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-
-//#include <QImage>
-//#include <QAction>
-//#include <QLabel>
-//#include <QScrollArea>
-//#include <QScrollBar>
-
 #include <qcustomplot.h>
+#include <QtGui>
 
+/********************/
+/* Octave Libraries */
+/********************/
 #include <oct.h>
 #include <octave.h>
 #include <parse.h>
 #include <toplev.h>
 
-//#include <QGraphicsItem>
-//#include <QGraphicsScene>
-#include <QtGui>
-
-class QAction;
-class QLabel;
-class QMenu;
-class QScrollArea;
-class QScrollBar;
-class QLineSeries;
-class QChart;
 
 namespace Ui
 {
@@ -43,18 +29,22 @@ public:
     ~MainWindow();
 
 private slots:
+    /***************/
+    /* QCustomPlot */
+    /***************/
 
-    /****************/
-    /*  QCustomPlot */
-    /****************/
+    // Mouse handlers for qCustomPlot
     void mousePress();
     void mouseWheel();
-    void selectionChanged();
     void graphClicked(QCPAbstractPlottable*,int);
     void legendDoubleClick(QCPLegend *legend, QCPAbstractLegendItem *item);
-    //void titleDoubleClick(QMouseEvent* event);
+    void titleDoubleClick(QMouseEvent* event);
+
+    // Context menu slots for qCustomPlot
     void contextMenuRequest(QPoint pos);
     void contextMenuAddRequested();
+
+    void selectionChanged();
     void removeSelectedGraphs();
     void changeGraphColor();
 
@@ -86,12 +76,19 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    void setImage(const QImage &newImage);
+    bool temp;
+
+
+    /******************/
+    /* Octave Members */
+    /******************/
 
     Matrix outputMatrix;
     int matrixRows, matrixCols;
     bool loadOctaveMatrix(QString &fileName);
+    bool iterateDirectory(QString &directoryName, QVector<QString> *filenames);
     void initializeGraphicsScene();
+
 
     /***********************************/
     /* Private members for QCustomPlot */
@@ -100,13 +97,16 @@ private:
     void initializeGraph();
     int xMin, xMax, yMin, yMax;
     void recenterGraph();
+    void addPlot(QVector<double> pointVector);
 
+
+    /*********************/
+    /* Members for Image */
+    /*********************/
 
     QGraphicsScene *scene;
     QVector<QImage> imageVector;
-    void addPlot(QVector<double> pointVector);
-
-    bool temp;
+    //void setImage(const QImage &newImage);
 };
 
 #endif // MAINWINDOW_H

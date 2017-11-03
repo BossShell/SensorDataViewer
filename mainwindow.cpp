@@ -1,24 +1,14 @@
-#define OCTAVE_DEBUG
-//#define RB_COLORMAP
-#define HSV_COLORMAP
-
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include <QtWidgets>
 #include "customgraphicsscene.h"
 
-//#include <QVector>
-//#include <QString>
-//#include <QChar>
-//#include <QMatrix>
+// Displays debug information if defined
+#define OCTAVE_DEBUG
+#define DIRECTORY_DEBUG
 
-//#include <QFileDialog>
-//#include <QFile>
-//#include <QMessageBox>
-//#include <QTextStream>
-
-#include <sstream>
-//#include <QTextStream>
+// Colormap mode
+#define HSV_COLORMAP
+//#define RB_COLORMAP
 
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -27,6 +17,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    // Assigns stylesheet to the GUI
     QFile styleFile("style.qss");
     styleFile.open(QFile::ReadOnly);
     QString style(styleFile.readAll());
@@ -34,7 +25,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     initializeGraph();
 
-    ui->hyperspecView->setDragMode(QGraphicsView::ScrollHandDrag);
+    // Disable some of the user interactions while there is no image loaded
     ui->verticalSlider->setEnabled(false);
     ui->resetZoomButton->setEnabled(false);
     ui->addButton->setEnabled(false);
@@ -47,7 +38,10 @@ MainWindow::MainWindow(QWidget *parent) :
     argv(1) = "-q";
 
     octave_main(2, argv.c_str_vec(), 1);
-    qDebug() << "Octave initialized.";
+
+    #ifdef OCTAVE_DEBUG
+        qDebug() << "Octave initialized.";
+    #endif
 }
 
 MainWindow::~MainWindow()
@@ -55,170 +49,16 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-bool MainWindow::loadOctaveMatrix(QString &fileName)
-{
-    // Octave function to read hyperspectral:
-    // function [x] = ReadFile(fileName, scale)
-
-    // ReadFile loads a hyperspectral cube produced by Spectronon Pro software
-    // and saves it in x. The function reads up to 40 bands at a time due to a
-    // memory overflow crash. It outputs the time required to read each time it
-    // gets 40 more bands.
-    //
-    // Arguments:
-    //    fileName: A string containing the name of the file without extensions.
-    //    scale:  A boolean value, where 1 indicates that the data should be
-    //            converted to floating point values and scaled to 1 by dividing
-    //            by the value indicated in the header file.
-    // --------------------------------------------------------------------------
-
-    imageVector.clear();
-    outputMatrix.clear();
-
-    octave_value_list input;
-
-    QByteArray ba = fileName.toLatin1();
-    const char *fileNameChar = ba.data();
-    input(0) = octave_value(fileNameChar);
-
-    octave_value_list output = feval("readMat", input);
-
-
-    #ifdef OCTAVE_DEBUG
-        qDebug() << "\nOctave Debug:\n";
-        qDebug() << output.length() << "item(s) in output.";
-
-        for(int i = 0; i < output.length(); i++)
-        {
-            if(output(i).is_matrix_type())
-            {
-                qDebug() << "Output:" << i
-                         << " Type:" << QString::fromStdString(output(0).type_name())
-                         << " Rows:" << output(i).rows()
-                         << " Columns:" << output(i).columns();
-            } else
-            {
-                qDebug() << "Output:" << i
-                         << " Type:" << QString::fromStdString(output(0).type_name())
-                         << " Length:" << output(i).length();
-            }
-        }
-    #endif
-
-
-    outputMatrix = output(0).matrix_value();
-    matrixRows = outputMatrix.rows();
-    matrixCols = outputMatrix.columns();
-
-    int numberChannels = matrixCols / output(0).columns();
-
-    matrixCols = matrixCols / numberChannels;
-
-    QImage bandImage(QSize(matrixRows, matrixCols), QImage::Format_RGB888);
-    int hValue, sValue, lValue;
-    QColor color;
-
-
-#ifdef RB_COLORMAP
-
-    #ifdef OCTAVE_DEBUG
-        qDebug() << "\n\nBlue<->Red Colormap Debug:\n";
-    #endif
-
-    for(int k = 0; k < numberChannels; k++)
-    {
-        #ifdef OCTAVE_DEBUG
-            QTime time;
-            time.restart();
-        #endif
-
-        for(int i = 0; i < matrixRows; i++)
-        {
-            for(int j = 0; j < matrixCols; j++)
-            {
-                // {0-4096}
-                if (outputMatrix.elem(i, (matrixCols * k) + j) > 2048)
-                    outputMatrix.elem(i, (matrixCols * k) + j) = 2048;
-
-                if (outputMatrix.elem(i, (matrixCols * k) + j) < 1028) {
-                    hValue = 240;
-                    sValue = 100 * ( outputMatrix.elem(i, (matrixCols * k) + j) / 1028);
-                    lValue = 100 - 50 * ( outputMatrix.elem(i, (matrixCols * k) + j) / 1028);
-                }
-                else {
-                    hValue = 0;
-                    sValue = 100 * ( outputMatrix.elem(i, (matrixCols * k) + j) - 1028) / 1028;
-                    lValue = 100 - 50 * ( outputMatrix.elem(i, (matrixCols * k) + j) - 1028) / 1028;
-                }
-                color.setHsl(hValue, sValue, lValue);
-
-                bandImage.setPixelColor(QPoint(i, j), color);
-            }
-        }
-        imageVector.append(bandImage);
-
-        #ifdef OCTAVE_DEBUG
-            qDebug() << "Band" << k
-                     << "time:" << time.elapsed() << "ms";
-        #endif
-    }
-
-#endif
-
-#ifdef HSV_COLORMAP
-    sValue =  100;
-    lValue = 100;
-
-    #ifdef OCTAVE_DEBUG
-        qDebug() << "\nHSV Colormap Debug:\n";
-    #endif
-
-    for(int k = 0; k < numberChannels; k++)
-    {
-        #ifdef OCTAVE_DEBUG
-            QTime time;
-            time.restart();
-        #endif
-
-        for(int i = 0; i < matrixRows; i++)
-        {
-            for(int j = 0; j < matrixCols; j++)
-            {
-                hValue = 360 * ( outputMatrix.elem(i, (matrixCols * k) + j) / 4096);
-                color.setHsv(hValue, sValue, lValue);
-
-                bandImage.setPixelColor(QPoint(i, j), color);
-            }
-        }
-        imageVector.append(bandImage);
-
-        #ifdef OCTAVE_DEBUG
-            qDebug() << "Band" << k
-                     << "time:" << time.elapsed() << "ms";
-        #endif
-    }
-
-#endif
-
-    ui->verticalSlider->setMinimum(0);
-    ui->verticalSlider->setMaximum(numberChannels - 1);
-
-    #ifdef OCTAVE_DEBUG
-        qDebug() << "\nMainWindow::imageVector:"
-                 << " Size:" << imageVector[0].size()
-                 << " Number of channels:" << imageVector.length();
-    #endif
-
-    if(imageVector.length())
-        return true;
-    else
-        return false;
-}
+/********************************************************************************/
+/* MainWindow::initializeGraphicsScene()                                        */
+/*                                                                              */
+/* Description - Initializes Graphics container which displays the hyperspec    */
+/*               image                                                          */
+/********************************************************************************/
 
 void MainWindow::initializeGraphicsScene()
 {
     QGraphicsPixmapItem *item = new QGraphicsPixmapItem(QPixmap::fromImage(imageVector[ui->verticalSlider->value()]));
-    //scene = new QGraphicsScene(this);
     scene = new CustomGraphicsScene(ui->hyperspecView);
     scene->addItem(item);
 
@@ -228,9 +68,18 @@ void MainWindow::initializeGraphicsScene()
     ui->verticalSlider->setEnabled(true);
     ui->resetZoomButton->setEnabled(true);
     ui->addButton->setEnabled(true);
+    ui->hyperspecView->setDragMode(QGraphicsView::ScrollHandDrag);
     xMax = imageVector.length() - 1;
     recenterGraph();
 }
+
+
+/********************************************************************************/
+/* MainWindow::initializeGraph()                                                */
+/*                                                                              */
+/* Description - Initializes QCustomPlot widget which displays the spectral     */
+/*               signature for selected points                                  */
+/********************************************************************************/
 
 void MainWindow::initializeGraph()
 {
@@ -254,6 +103,9 @@ void MainWindow::initializeGraph()
     ui->customPlot->plotLayout()->addElement(0, 0, title);
     */
 
+    // Connect slots for title double click if desired
+    //connect(title, SIGNAL(doubleClicked(QMouseEvent*)), this, SLOT(titleDoubleClick(QMouseEvent*)));
+
     // Sets up the legend
     QFont legendFont = font();
     legendFont.setPointSize(7);
@@ -273,10 +125,9 @@ void MainWindow::initializeGraph()
     connect(ui->customPlot->xAxis, SIGNAL(rangeChanged(QCPRange)), ui->customPlot->xAxis2, SLOT(setRange(QCPRange)));
     connect(ui->customPlot->yAxis, SIGNAL(rangeChanged(QCPRange)), ui->customPlot->yAxis2, SLOT(setRange(QCPRange)));
 
-    // Connect slots for some interactions
+    // Connect slots for axis and legend double clicks
     //connect(ui->customPlot, SIGNAL(axisDoubleClick(QCPAxis*,QCPAxis::SelectablePart,QMouseEvent*)), this, SLOT(axisLabelDoubleClick(QCPAxis*,QCPAxis::SelectablePart)));
-    connect(ui->customPlot, SIGNAL(legendDoubleClick(QCPLegend*,QCPAbstractLegendItem*,QMouseEvent*)), this, SLOT(legendDoubleClick(QCPLegend*,QCPAbstractLegendItem*)));
-    //connect(title, SIGNAL(doubleClicked(QMouseEvent*)), this, SLOT(titleDoubleClick(QMouseEvent*)));
+    connect(ui->customPlot, SIGNAL(legendDoubleClick(QCPLegend*,QCPAbstractLegendItem*,QMouseEvent*)), this, SLOT(legendDoubleClick(QCPLegend*,QCPAbstractLegendItem*)));   
 
     // Shows a message in the status bar when a graph is clicked
     connect(ui->customPlot, SIGNAL(plottableClick(QCPAbstractPlottable*,int,QMouseEvent*)), this, SLOT(graphClicked(QCPAbstractPlottable*,int)));
@@ -337,11 +188,186 @@ void MainWindow::initializeGraph()
     ui->customPlot->axisRect()->setBackground(axisRectGradient);
 }
 
-/*
-// Allows the graph title to be chenged by double clicking it.
-//
-// If desired, slot must be uncommented in mainwindow.h as well as the
-// slot connection in MainWindow::initializeGraph() located in this file
+
+/********************************************************************************/
+/* MainWindow::loadOctaveMatrix(QString &fileName)                              */
+/*                                                                              */
+/* Description - Loads a .mat file using octave. Was used to import 3D image,   */
+/*               might be replaced for implementation of all bands.             */
+/********************************************************************************/
+
+bool MainWindow::loadOctaveMatrix(QString &fileName)
+{
+    imageVector.clear();
+    outputMatrix.clear();
+
+    octave_value_list input;
+
+    QByteArray ba = fileName.toLatin1();
+    const char *fileNameChar = ba.data();
+    input(0) = octave_value(fileNameChar);
+
+    octave_value_list output = feval("readMat", input);
+
+
+    #ifdef OCTAVE_DEBUG
+        qDebug() << "\nOctave Debug:\n";
+        qDebug() << output.length() << "item(s) in output.";
+
+        for(int i = 0; i < output.length(); i++)
+        {
+            if(output(i).is_matrix_type())
+            {
+                qDebug() << "Output:" << i
+                         << " Type:" << QString::fromStdString(output(0).type_name())
+                         << " Rows:" << output(i).rows()
+                         << " Columns:" << output(i).columns();
+            } else
+            {
+                qDebug() << "Output:" << i
+                         << " Type:" << QString::fromStdString(output(0).type_name())
+                         << " Length:" << output(i).length();
+            }
+        }
+    #endif
+
+
+    outputMatrix = output(0).matrix_value();
+    matrixRows = outputMatrix.rows();
+    matrixCols = outputMatrix.columns();
+
+    int numberChannels = matrixCols / output(0).columns();
+
+    matrixCols = matrixCols / numberChannels;
+
+    QImage bandImage(QSize(matrixRows, matrixCols), QImage::Format_RGB888);
+    int hValue, sValue, lValue;
+    QColor color;
+
+
+    #ifdef RB_COLORMAP
+
+        #ifdef OCTAVE_DEBUG
+            qDebug() << "\n\nBlue<->Red Colormap Debug:\n";
+        #endif
+
+        for(int k = 0; k < numberChannels; k++)
+        {
+            #ifdef OCTAVE_DEBUG
+                QTime time;
+                time.restart();
+            #endif
+
+            for(int i = 0; i < matrixRows; i++)
+            {
+                for(int j = 0; j < matrixCols; j++)
+                {
+                    // {0-4096}
+                    if (outputMatrix.elem(i, (matrixCols * k) + j) > 2048)
+                        outputMatrix.elem(i, (matrixCols * k) + j) = 2048;
+
+                    if (outputMatrix.elem(i, (matrixCols * k) + j) < 1028) {
+                        hValue = 240;
+                        sValue = 100 * ( outputMatrix.elem(i, (matrixCols * k) + j) / 1028);
+                        lValue = 100 - 50 * ( outputMatrix.elem(i, (matrixCols * k) + j) / 1028);
+                    }
+                    else {
+                        hValue = 0;
+                        sValue = 100 * ( outputMatrix.elem(i, (matrixCols * k) + j) - 1028) / 1028;
+                        lValue = 100 - 50 * ( outputMatrix.elem(i, (matrixCols * k) + j) - 1028) / 1028;
+                    }
+                    color.setHsl(hValue, sValue, lValue);
+
+                    bandImage.setPixelColor(QPoint(i, j), color);
+                }
+            }
+            imageVector.append(bandImage);
+
+            #ifdef OCTAVE_DEBUG
+                qDebug() << "Band" << k
+                         << "time:" << time.elapsed() << "ms";
+            #endif
+        }
+
+    #endif
+
+    #ifdef HSV_COLORMAP
+        sValue =  100;
+        lValue = 100;
+
+        #ifdef OCTAVE_DEBUG
+            qDebug() << "\nHSV Colormap Debug:\n";
+        #endif
+
+        for(int k = 0; k < numberChannels; k++)
+        {
+            #ifdef OCTAVE_DEBUG
+                QTime time;
+                time.restart();
+            #endif
+
+            for(int i = 0; i < matrixRows; i++)
+            {
+                for(int j = 0; j < matrixCols; j++)
+                {
+                    // Value range: {0, 4096}
+                    hValue = 360 * ( outputMatrix.elem(i, (matrixCols * k) + j) / 4096);
+                    color.setHsv(hValue, sValue, lValue);
+
+                    bandImage.setPixelColor(QPoint(i, j), color);
+                }
+            }
+            imageVector.append(bandImage);
+
+            #ifdef OCTAVE_DEBUG
+                qDebug() << "Band" << k
+                         << "time:" << time.elapsed() << "ms";
+            #endif
+        }
+
+    #endif
+
+    ui->verticalSlider->setMinimum(0);
+    ui->verticalSlider->setMaximum(numberChannels - 1);
+
+    #ifdef OCTAVE_DEBUG
+        qDebug() << "\nMainWindow::imageVector:"
+                 << " Size:" << imageVector[0].size()
+                 << " Number of channels:" << imageVector.length();
+    #endif
+
+    if(imageVector.length())
+        return true;
+    else
+        return false;
+}
+
+void MainWindow::loadOctaveDirectory(QVector<QString> *filePaths)
+{
+    for (int i = 0; i < filePaths->length(); i++)
+    {
+        QString filePath = filePaths[i];
+        QString filename = filename.right(filename.length() - (filename.lastIndexOf("/") + 1));
+        filename = filename.left(filename.indexOf("."));
+        int bandNumber = filename.right(3).toInt();
+
+        #ifdef DIRECTORY_DEBUG
+            qDebug() << "File Path:" << filePath
+                     << " Filename:" << filename
+                     << " Band Number:" << bandNumber;
+        #endif
+    }
+}
+
+
+
+/********************************************************************************/
+/* MainWindow::titleDoubleClick(QMouseEvent* event)                             */
+/*                                                                              */
+/* Description - Allows the graph title to be changed by double clicking it.    */
+/*             - If desired, title initialization and slot connection in        */
+/*               MainWindow::initializeGraph() located in this file             */
+/********************************************************************************/
 
 void MainWindow::titleDoubleClick(QMouseEvent* event)
 {
@@ -357,7 +383,14 @@ void MainWindow::titleDoubleClick(QMouseEvent* event)
                 }
         }
 }
-*/
+
+
+/********************************************************************************/
+/* MainWindow::legendDoubleClick(QCPLegend*, QCPAbstractLegendItem*)            */
+/*                                                                              */
+/* Description - Allows items in the legend to be double clicked in order to    */
+/*               change their name.                                             */
+/********************************************************************************/
 
 void MainWindow::legendDoubleClick(QCPLegend *legend, QCPAbstractLegendItem *item)
 {
@@ -374,6 +407,14 @@ void MainWindow::legendDoubleClick(QCPLegend *legend, QCPAbstractLegendItem *ite
         }
     }
 }
+
+
+/********************************************************************************/
+/* MainWindow::selectionChanged()                                               */
+/*                                                                              */
+/* Description - Makes axes synchronously selectable and groups axis parts      */
+/*             - Synchronizes graph selection with corresponding legend item    */
+/********************************************************************************/
 
 void MainWindow::selectionChanged()
 {
@@ -406,6 +447,14 @@ void MainWindow::selectionChanged()
     }
 }
 
+
+/********************************************************************************/
+/* MainWindow::mousePress()                                                     */
+/*                                                                              */
+/* Description - Loads a .mat file using octave. Was used to import 3D image,   */
+/*               might be replaced.                                             */
+/********************************************************************************/
+
 void MainWindow::mousePress()
 {
     // If an axis is selected, only allow the direction of that axis to be dragged
@@ -419,6 +468,14 @@ void MainWindow::mousePress()
         ui->customPlot->axisRect()->setRangeDrag(Qt::Horizontal|Qt::Vertical);
 }
 
+
+/********************************************************************************/
+/* MainWindow::mouseWheel()                                                     */
+/*                                                                              */
+/* Description - Loads a .mat file using octave. Was used to import 3D image,   */
+/*               might be replaced.                                             */
+/********************************************************************************/
+
 void MainWindow::mouseWheel()
 {
     // If an axis is selected, only allow the direction of that axis to be zoomed
@@ -431,6 +488,13 @@ void MainWindow::mouseWheel()
     else
         ui->customPlot->axisRect()->setRangeZoom(Qt::Horizontal|Qt::Vertical);
 }
+
+
+/********************************************************************************/
+/* MainWindow::contextMenuRequest(QPoint pos)                                   */
+/*                                                                              */
+/* Description - Handles and populates context menus for qCustomPlot.           */
+/********************************************************************************/
 
 void MainWindow::contextMenuRequest(QPoint pos)
 {
@@ -476,6 +540,13 @@ void MainWindow::contextMenuRequest(QPoint pos)
     menu->popup(ui->customPlot->mapToGlobal(pos));
 }
 
+
+/********************************************************************************/
+/* MainWindow::removeSelectedGraphs()                                           */
+/*                                                                              */
+/* Description - Removes the selected plots from qCustomPlot                    */
+/********************************************************************************/
+
 void MainWindow::removeSelectedGraphs()
 {
     while (ui->customPlot->selectedGraphs().size() > 0)
@@ -485,6 +556,13 @@ void MainWindow::removeSelectedGraphs()
 
     ui->customPlot->replot();
 }
+
+
+/********************************************************************************/
+/* MainWindow::changeGraphColor()                                               */
+/*                                                                              */
+/* Description - Changes the color of the selected plots from qCustomPlot       */
+/********************************************************************************/
 
 void MainWindow::changeGraphColor()
 {
@@ -498,6 +576,13 @@ void MainWindow::changeGraphColor()
     ui->customPlot->replot();
 }
 
+
+/********************************************************************************/
+/* MainWindow::recenterGraph()                                                  */
+/*                                                                              */
+/* Description - Recenters and realigns qCustomPlot.                            */
+/********************************************************************************/
+
 void MainWindow::recenterGraph()
 {
     ui->customPlot->xAxis->setRange(xMin, xMax);
@@ -508,6 +593,13 @@ void MainWindow::recenterGraph()
         ui->customPlot->legend->setVisible(false);
 }
 
+
+/********************************************************************************/
+/* MainWindow::graphClicked(QCPAbstractPlottable *plottable, int dataIndex)     */
+/*                                                                              */
+/* Description - Handles the event in which a plot is clicked.                  */
+/********************************************************************************/
+
 void MainWindow::graphClicked(QCPAbstractPlottable *plottable, int dataIndex)
 {
     // Since we know we only have QCPGraphs in the plot, we can immediately access interface1D().
@@ -516,6 +608,14 @@ void MainWindow::graphClicked(QCPAbstractPlottable *plottable, int dataIndex)
     QString message = QString("Clicked on graph '%1' at data point #%2 with value %3.").arg(plottable->name()).arg(dataIndex).arg(dataValue);
     ui->statusBar->showMessage(message, 2500);
 }
+
+
+/********************************************************************************/
+/* MainWindow::addPlot(QVector<double> pointVector)                             */
+/*                                                                              */
+/* Description - Adds a plot (passed as QVector<double> argument to             */
+/*               qCustomPlot.                                                   */
+/********************************************************************************/
 
 void MainWindow::addPlot(QVector<double> pointVector)
 {
@@ -532,6 +632,13 @@ void MainWindow::addPlot(QVector<double> pointVector)
     ui->customPlot->legend->setVisible(true);
     ui->customPlot->replot();
 }
+
+
+/********************************************************************************/
+/* MainWindow::addPoint(QGraphicsSceneMouseEvent *event)                        */
+/*                                                                              */
+/* Description - Adds spectral signature for pixel in image when clicked.       */
+/********************************************************************************/
 
 void MainWindow::addPoint(QGraphicsSceneMouseEvent *event)
 { 
@@ -553,6 +660,14 @@ void MainWindow::addPoint(QGraphicsSceneMouseEvent *event)
     addPlot(pointVector);
 }
 
+
+/********************************************************************************/
+/* MainWindow::bandChange(int newBand)                                          */
+/*                                                                              */
+/* Description - Changes displayed band when bandSelector scrollBar is          */
+/*               adjusted.                                                      */
+/********************************************************************************/
+
 void MainWindow::bandChange(int newBand)
 {
     if(imageVector.length() > 1)
@@ -560,21 +675,66 @@ void MainWindow::bandChange(int newBand)
         // FIXME: Add check for when no image is loaded
         scene->clear();
         QGraphicsPixmapItem *item = new QGraphicsPixmapItem(QPixmap::fromImage(imageVector[newBand]));
-        //scene->addItem(new QGraphicsPixmapItem(QPixmap::fromImage(imageVector[newBand])));
         scene->addItem(item);
         ui->hyperspecView->update();
     }
 }
 
+
+/********************************************************************************/
+/* MainWindow::on_loadButton_released()                                         */
+/*                                                                              */
+/* Description - When the load button is released, opens file dialogue and      */
+/*               calls methods necessary to map image to container.             */
+/********************************************************************************/
+
 void MainWindow::on_loadButton_released()
 {
     bool okay;
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), QString());
+    QString directoryName = QFileDialog::getExistingDirectory(this, tr("Open Directory"), QString());
 
-    okay = loadOctaveMatrix(fileName);
+    QVector<QString> filePaths(270);
+    iterateDirectory(directoryName, filePaths);
 
     if (okay) initializeGraphicsScene();
 }
+
+
+/********************************************************************************/
+/* MainWindow::iterateDirectory(QString &directoryName)                         */
+/*                                                                              */
+/* Description - Iterates the selected directory.                               */
+/********************************************************************************/
+
+void MainWindow::iterateDirectory(QString &directoryName, QVector<QString> *filenames)
+{
+    #ifdef DIRECTORY_DEBUG
+        qDebug() << "\nDirectory Iterator Debug:\n";
+        qDebug() << directoryName;
+    #endif
+
+    QDirIterator directory(directoryName, QDirIterator::NoIteratorFlags);
+
+    QTime time;
+    time.restart();
+
+    while (directory.hasNext())
+    {
+        QString nextEntry = directory.next();
+        if (nextEntry.right(4) == ".mat")
+        {
+            filenames->append(nextEntry);
+        }
+    }
+}
+
+
+/********************************************************************************/
+/* MainWindow::on_addButton_toggled()                                           */
+/*                                                                              */
+/* Description - Changes between panning mode and selecting mode for image when */
+/*               the add button is toggled.                                     */
+/********************************************************************************/
 
 void MainWindow::on_addButton_toggled()
 {
@@ -594,15 +754,38 @@ void MainWindow::on_addButton_toggled()
     }
 }
 
+
+/********************************************************************************/
+/* MainWindow::contextMenuAddRequested()                                        */
+/*                                                                              */
+/* Description - Toggles add button when "Add Point" is selected from the       */
+/*               context menu.                                                  */
+/********************************************************************************/
+
 void MainWindow::contextMenuAddRequested()
 {
     ui->addButton->setChecked(true);
 }
 
+
+/********************************************************************************/
+/* MainWindow::on_centerGraphButton_released()                                  */
+/*                                                                              */
+/* Description - Recenters and realigns qCustomPlot.                            */
+/********************************************************************************/
+
 void MainWindow::on_centerGraphButton_released()
 {
     recenterGraph();
 }
+
+
+/********************************************************************************/
+/* MainWindow::on_clearButton_released()                                        */
+/*                                                                              */
+/* Description - Clears all plots from qCustomPlot as well as recenters and     */
+/*               realigns qCustomPlot                                           */
+/********************************************************************************/
 
 void MainWindow::on_clearButton_released()
 {
@@ -611,6 +794,13 @@ void MainWindow::on_clearButton_released()
     ui->addButton->setChecked(false);
     recenterGraph();
 }
+
+
+/********************************************************************************/
+/* MainWindow::on_saveButton_released()                                         */
+/*                                                                              */
+/* Description - Saves qCustomPlot window to a .jpg file.                       */
+/********************************************************************************/
 
 void MainWindow::on_saveButton_released()
 {
@@ -627,6 +817,14 @@ void MainWindow::on_saveButton_released()
             ui->customPlot->saveJpg(fileName, 0, 0, 5.0);
     }
 }
+
+
+/********************************************************************************/
+/* MainWindow::on_resetZoomButton_released()                                    */
+/*                                                                              */
+/* Description - Resets the zoom of the image window while keeping the aspect   */
+/*               ratio.                                                         */
+/********************************************************************************/
 
 void MainWindow::on_resetZoomButton_released()
 {

@@ -7,6 +7,13 @@ CustomGraphicsScene::CustomGraphicsScene(QWidget *parent) : QGraphicsScene(paren
 
 }
 
+
+/**********************************************************************************/
+/* Method - CustomGraphicsScene::mousePressEvent(QGraphicsSceneMouseEvent *event) */
+/*                                                                                */
+/* Description - Intercepts mouse events in QGraphicsScene.                       */
+/**********************************************************************************/
+
 void CustomGraphicsScene::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     emit CustomGraphicsScene::mousePress(event);

@@ -7,12 +7,23 @@ CustomGraphicsView::CustomGraphicsView(QWidget *parent) : QGraphicsView(parent)
 
 }
 
+/********************************************************************************/
+/* Method - CustomGraphicsView::wheelEvent(QWheelEvent *zoomEvent)              */
+/*                                                                              */
+/* Description - Intercepts mouse wheel events in QGraphicsView and scales      */
+/* image accordingly.                                                           */
+/********************************************************************************/
+
 void CustomGraphicsView::wheelEvent(QWheelEvent *zoomEvent)
 {
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     static const double scaleFactor = 1.15;
-    static double currentScale = 1.0;  // stores the current scale value.
-    static const double scaleMin = 1.0; // defines the min scale limit.
+
+    // Stores the current scale value.
+    static double currentScale = 1.0;
+
+    // Defines the minimum scale limit.
+    static const double scaleMin = 1.0;
 
     if(zoomEvent->delta() > 0)
     {
@@ -24,9 +35,3 @@ void CustomGraphicsView::wheelEvent(QWheelEvent *zoomEvent)
         currentScale /= scaleFactor;
     }
 }
-
-//void CustomGraphicsView::mouseReleaseEvent(QMouseEvent *event)
-//{
-    //QPoint point = event->pos();
-   // emit mouseReleaseEvent(point);
-//}
