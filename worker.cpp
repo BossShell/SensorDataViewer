@@ -1,15 +1,21 @@
 #include "worker.h"
 #include <QThread>
 #include <QColor>
+#include <QDebug>
+#include <QTime>
 
-Worker::Worker()
+Worker::Worker(int band)
 {
-    this->filename = "shutup";
+    this->bandNumber = band;
 }
 
-void Worker::run()
+void Worker::process()
 {
-    octave_value_list input;
+    qDebug() << "in thread for band" << bandNumber;
+    QThread::sleep(1);
+    emit finished();
+
+    /*octave_value_list input;
     int matrixRows, matrixCols;
 
     QByteArray ba = this->filename.toLatin1();
@@ -46,5 +52,5 @@ void Worker::run()
             }
         }
         //imageVector.append(bandImage);
-    }
+    }*/
 }

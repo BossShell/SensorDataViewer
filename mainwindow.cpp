@@ -1,12 +1,13 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "customgraphicsscene.h"
+#include "worker.h"
 
 // Displays debug information if defined
 #define OCTAVE_DEBUG
 #define DIRECTORY_DEBUG
 
-// Colormap mode
+// Colormap mode1
 #define HSV_COLORMAP
 //#define RB_COLORMAP
 
@@ -342,12 +343,22 @@ bool MainWindow::loadOctaveMatrix(QString &fileName)
         return false;
 }
 
-void MainWindow::loadOctaveDirectory(QVector<QString> *filePaths)
+
+/********************************************************************************/
+/* MainWindow::loadOctaveMatrix(QString &fileName)                              */
+/*                                                                              */
+/* Description - Loads a .mat file using octave. Was used to import 3D image,   */
+/*               might be replaced for implementation of all bands.             */
+/********************************************************************************/
+
+void MainWindow::loadOctaveDirectory(QVector<QString> filePaths)
 {
-    for (int i = 0; i < filePaths->length(); i++)
+    QVector<QThread*> threads(filePaths.length(), new QThread);
+
+    for (int i = 0; i < filePaths.length(); i++)
     {
         QString filePath = filePaths[i];
-        QString filename = filename.right(filename.length() - (filename.lastIndexOf("/") + 1));
+        QString filename = filePath.right(filePath.length() - (filePath.lastIndexOf("/") + 1));
         filename = filename.left(filename.indexOf("."));
         int bandNumber = filename.right(3).toInt();
 
@@ -356,9 +367,19 @@ void MainWindow::loadOctaveDirectory(QVector<QString> *filePaths)
                      << " Filename:" << filename
                      << " Band Number:" << bandNumber;
         #endif
+
+        Worker* bandWorker = new Worker(bandNumber);
+        bandWorker->moveToThread(threads[i]);
+        connect(threads[i], SIGNAL(started()), bandWorker, SLOT(process()));
+        connect(bandWorker, SIGNAL(finished()), threads[i], SLOT(quit()));
+        connect(bandWorker, SIGNAL(finished()), threads[i], SLOT(deleteLater()));
+
+        for (int i = 0; i < filePaths.length(); i++)
+        {
+            threads[i]->start();
+        }
     }
 }
-
 
 
 /********************************************************************************/
@@ -690,13 +711,13 @@ void MainWindow::bandChange(int newBand)
 
 void MainWindow::on_loadButton_released()
 {
-    bool okay;
     QString directoryName = QFileDialog::getExistingDirectory(this, tr("Open Directory"), QString());
 
-    QVector<QString> filePaths(270);
-    iterateDirectory(directoryName, filePaths);
+    QVector<QString> filePaths;
+    iterateDirectory(directoryName, &filePaths);
 
-    if (okay) initializeGraphicsScene();
+    loadOctaveDirectory(filePaths);
+    //initializeGraphicsScene();
 }
 
 
@@ -706,7 +727,7 @@ void MainWindow::on_loadButton_released()
 /* Description - Iterates the selected directory.                               */
 /********************************************************************************/
 
-void MainWindow::iterateDirectory(QString &directoryName, QVector<QString> *filenames)
+void MainWindow::iterateDirectory(QString directoryName, QVector<QString> *filenames)
 {
     #ifdef DIRECTORY_DEBUG
         qDebug() << "\nDirectory Iterator Debug:\n";

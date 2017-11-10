@@ -20,14 +20,14 @@ SOURCES += \
         qcustomplot.cpp \
         customgraphicsview.cpp \
         customgraphicsscene.cpp \
-    worker.cpp
+        worker.cpp
 
 HEADERS += \
         mainwindow.h \
         qcustomplot.h \
         customgraphicsview.h \
         customgraphicsscene.h \
-    worker.h
+        worker.h
 
 FORMS += \
         mainwindow.ui

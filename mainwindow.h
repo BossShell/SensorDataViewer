@@ -86,7 +86,8 @@ private:
     Matrix outputMatrix;
     int matrixRows, matrixCols;
     bool loadOctaveMatrix(QString &fileName);
-    bool iterateDirectory(QString &directoryName, QVector<QString> *filenames);
+    void loadOctaveDirectory(QVector<QString> filePaths);
+    void iterateDirectory(QString directoryName, QVector<QString> *filenames);
     void initializeGraphicsScene();
 
 
